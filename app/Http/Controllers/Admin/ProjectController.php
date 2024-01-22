@@ -18,7 +18,13 @@ class ProjectController extends Controller
      */
     public function index()
     {
-        $projects =Project::all();
+        $currentUserId = Auth::id();
+        if ($currentUserId == 1) {
+            $projects = Project::paginate(3);
+        } else {
+            $projects = Project::where('user_id', $currentUserId)->paginate(3);
+        }
+
         return view('admin.projects.index', compact('projects'));
     }
 
@@ -39,7 +45,7 @@ class ProjectController extends Controller
     {
         $formData = $request->validated();
         //Creo slug
-        $slug = Str::slug($formData['title'], '-');
+        $slug = Project::getSlug($formData['title']);
         //add slug to formData
         $formData['slug'] = $slug;
         //prendiamo  l'id dell'utente corrente (LA PERSONA CHE STA SALVANDO IL POST)
@@ -65,7 +71,11 @@ class ProjectController extends Controller
      */
     public function show(Project $project)
     {
-        return view('admin.projects.show', compact('project'));
+        $currentUserId = Auth::id();
+        if ($currentUserId == $project->user_id || $currentUserId == 1) {
+            return view('admin.projects.show', compact('project'));
+        }
+        abort(403);
     }
 
     /**
@@ -73,8 +83,12 @@ class ProjectController extends Controller
      */
     public function edit(Project $project)
     {
+        $currentUserId = Auth::id();
+        if ($currentUserId != $project->user_id && $currentUserId != 1) {
+            abort(403);
+        }
         $categories = Category::all();
-        $technologies = Technology::all();
+        $ttechnologies = Technology::all();
         return view('admin.projects.edit', compact('project', 'categories', 'technologies'));
     }
 
@@ -83,6 +97,10 @@ class ProjectController extends Controller
      */
     public function update(UpdateProjectRequest $request, Project $project)
     {
+        $currentUserId = Auth::id();
+        if ($currentUserId != $project->user_id && $currentUserId != 1) {
+            abort(403);
+        }
         $formData = $request->validated();
         $formData['slug'] = $project->slug;
         if ($project->title !== $formData['title']) {
@@ -104,6 +122,11 @@ class ProjectController extends Controller
             $formData['image'] = $path;
         }
         $project->update($formData);
+        if ($request->has('technologies')){
+            $project->technologies()->sync($request->technologies);
+        }else {
+            $project->technologies()->detach();
+        }
         return redirect()->route('admin.projects.show', $project->slug);
     }
 
@@ -112,6 +135,11 @@ class ProjectController extends Controller
      */
     public function destroy(Project $project)
     {
+        $currentUserId = Auth::id();
+        if ($currentUserId != $project->user_id && $currentUserId != 1) {
+            abort(403);
+        }
+
         if($project->image) {
             Storage::delete($project->image);
         }
