@@ -88,7 +88,7 @@ class ProjectController extends Controller
             abort(403);
         }
         $categories = Category::all();
-        $ttechnologies = Technology::all();
+        $technologies = Technology::all();
         return view('admin.projects.edit', compact('project', 'categories', 'technologies'));
     }
 
@@ -118,7 +118,7 @@ class ProjectController extends Controller
             if ($project->image) {
                 Storage::delete($project->image);
             }
-            $path = Storage::put('images',$formData['image']);
+            $path = Storage::put('images', $formData['image']);
             $formData['image'] = $path;
         }
         $project->update($formData);

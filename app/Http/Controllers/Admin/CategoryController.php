@@ -7,7 +7,7 @@ use App\Models\Category;
 use App\Http\Requests\StoreCategoryRequest;
 use App\Http\Requests\UpdateCategoryRequest;
 use Illuminate\Support\Str;
-
+use Illuminate\Support\Facades\Auth;
 class CategoryController extends Controller
 {
     /**
@@ -24,6 +24,10 @@ class CategoryController extends Controller
      */
     public function create()
     {
+        $currentUserId = Auth::id();
+        if ($currentUserId != 1) {
+            abort(403);
+        }
         return view('admin.categories.create');
     }
 
@@ -32,7 +36,13 @@ class CategoryController extends Controller
      */
     public function store(StoreCategoryRequest $request)
     {
-        //
+        $formData = $request->validated();
+        //CREATE SLUG
+        $slug = Str::of($formData['name'])->slug('-');
+        //add slug to formData
+        $formData['slug'] = $slug;
+        $category = Category::create($formData);
+        return redirect()->route('admin.categories.show', $category->slug);
     }
 
     /**
@@ -48,6 +58,10 @@ class CategoryController extends Controller
      */
     public function edit(Category $category)
     {
+        $currentUserId = Auth::id();
+        if ($currentUserId != 1) {
+            abort(403);
+        }
         return view('admin.categories.edit', compact('category'));
     }
 
@@ -56,7 +70,16 @@ class CategoryController extends Controller
      */
     public function update(UpdateCategoryRequest $request, Category $category)
     {
-        //
+        $formData = $request->validated();
+        $formData['slug'] = $category->slug;
+
+        if ($category->name !== $formData['name']) {
+            //CREATE SLUG
+            $slug = Str::of($formData['name'])->slug('-');
+            $formData['slug'] = $slug;
+        }
+        $category->update($formData);
+        return redirect()->route('admin.categories.show', $category->slug);
     }
 
     /**
@@ -64,6 +87,11 @@ class CategoryController extends Controller
      */
     public function destroy(Category $category)
     {
-        //
+        $currentUserId = Auth::id();
+        if ($currentUserId != 1) {
+            abort(403);
+        }
+        $category->delete();
+        return to_route('admin.categories.index')->with('message', "$category->name eliminato con successo");
     }
 }
