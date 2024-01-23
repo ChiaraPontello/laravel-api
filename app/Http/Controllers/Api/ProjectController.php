@@ -9,7 +9,23 @@ use App\Models\Project;
 class ProjectController extends Controller
 {
     public function index(){
-        $projects = Project::all();
-        return response()->json($projects);
+        $projects = Project::paginate(3);
+        return response()->json(
+            [
+                'success' => true,
+                'results' => $projects
+            ]
+        );
+    }
+
+    public function show($id)
+    {
+        $project = Project::find($id);
+        return response()->json(
+            [
+                'success' => true,
+                'results' => $project
+            ]
+            );
     }
 }
