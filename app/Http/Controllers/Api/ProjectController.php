@@ -18,9 +18,9 @@ class ProjectController extends Controller
         );
     }
 
-    public function show($id)
+    public function show($slug)
     {
-        $project = Project::find($id);
+        $project = Project::where('slug', $slug)->with(['category', 'technologies'])->first();
         return response()->json(
             [
                 'success' => true,
